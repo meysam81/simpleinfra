@@ -1,4 +1,4 @@
-on: [push, pull_request]
+on: [push]
 
 jobs:
   rust:
@@ -6,46 +6,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-
-      - name: Install Rust stable
-        run: rustup update stable && rustup default stable
-
-      - name: Run rustfmt
-        run: cargo fmt --all -- --check
-
-      - name: Run the test suite
-        run: cargo test --all
-
-      - name: Run clippy
-        run: cargo clippy --all -- -Dwarnings
-
-  terraform:
-    name: Terraform configuration
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@master
-
-      - name: Ensure the terraform files are formatted correctly
-        run: terraform fmt -check -diff -recursive
-
-  actions-js:
-    name: GitHub Actions (JS)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@master
-      - uses: actions/setup-node@v3
         with:
-          node-version: 16
-      - name: Ensure the bundled action is the same as the source code
-        run: |
-          for action in $(ls github-actions/); do
-            if [[ -f "github-actions/${action}/package.json" ]]; then
-              pushd "github-actions/${action}"
-              sha256sum dist/* > "/tmp/sha256-${action}-before"
-              npm install
-              npm run build
-              sha256sum dist/* > "/tmp/sha256-${action}-after"
-              diff -u --color "/tmp/sha256-${action}-before" "/tmp/sha256-${action}-after"
-              popd
-            fi
-          done
+          repository: rust-lang/rust
+          fetch-depth: 1
+      - name: collect CPU statistics
+        run: src/ci/scripts/collect-cpu-stats.sh
+
+      - name: sleep
+        run: sleep 10
+
+      - uses: meysam81/simpleinfra/github-actions/upload-metrics-artifact@meysam/feat/upload-metrics-artifact-action
